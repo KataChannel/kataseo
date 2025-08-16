@@ -1,13 +1,13 @@
 {
-  "/_not-found/page": "/_not-found",
-  "/api/pages/route": "/api/pages",
   "/api/pages/[id]/route": "/api/pages/[id]",
   "/favicon.ico/route": "/favicon.ico",
-  "/robots.txt/route": "/robots.txt",
   "/sitemap.xml/route": "/sitemap.xml",
+  "/api/pages/route": "/api/pages",
+  "/robots.txt/route": "/robots.txt",
+  "/_not-found/page": "/_not-found",
   "/[slug]/page": "/[slug]",
   "/admin/page": "/admin",
-  "/admin/pages/page": "/admin/pages",
   "/admin/pages/create/page": "/admin/pages/create",
+  "/admin/pages/page": "/admin/pages",
   "/page": "/"
 }
