@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { MediaPicker } from '../MediaPicker'
 import { 
   Upload, 
   Image as ImageIcon, 
@@ -10,10 +11,24 @@ import {
   ExternalLink,
   Edit3,
   Check,
-  AlertCircle
+  AlertCircle,
+  Library,
+  Loader2
 } from 'lucide-react'
 import { Block } from '@/types/editor'
 import { cn } from '@/lib/utils/cn'
+import Image from 'next/image'
+
+interface MediaFile {
+  id: string
+  filename: string
+  originalName: string
+  url: string
+  altText?: string
+  mimeType: string
+  size: number
+  uploadedAt: string
+}
 
 interface ImageBlockProps {
   block: Block
@@ -26,6 +41,7 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
   const [isUploading, setIsUploading] = useState(false)
   const [showUrlInput, setShowUrlInput] = useState(false)
   const [showAltInput, setShowAltInput] = useState(false)
+  const [showMediaPicker, setShowMediaPicker] = useState(false)
   const [urlInput, setUrlInput] = useState(block.url || '')
   const [altInput, setAltInput] = useState(block.altText || '')
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -44,32 +60,53 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
         throw new Error('Please select an image file')
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Image must be less than 5MB')
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Image must be less than 10MB')
       }
 
-      // For demo purposes, we'll use a data URL
-      // In production, upload to your media service (Minio, Cloudinary, etc.)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        const url = e.target?.result as string
+      // Upload to media API
+      const formData = new FormData()
+      formData.append('files', file)
+
+      const response = await fetch('/api/media', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error('Upload failed')
+      }
+
+      const uploadedFiles = await response.json()
+      const uploadedFile = uploadedFiles[0]
+
+      if (uploadedFile) {
         onUpdate({ 
-          url, 
-          altText: altInput || file.name.replace(/\.[^/.]+$/, "")
+          url: uploadedFile.url,
+          altText: uploadedFile.altText || file.name.replace(/\.[^/.]+$/, ""),
+          mediaId: uploadedFile.id,
+          width: 800,
+          height: 600
         })
-        setIsUploading(false)
       }
-      reader.onerror = () => {
-        setUploadError('Failed to read file')
-        setIsUploading(false)
-      }
-      reader.readAsDataURL(file)
 
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Upload failed')
+    } finally {
       setIsUploading(false)
     }
+  }
+
+  const handleMediaSelect = (media: MediaFile) => {
+    onUpdate({ 
+      url: media.url,
+      altText: media.altText || media.originalName,
+      mediaId: media.id,
+      width: 800,
+      height: 600
+    })
+    setShowMediaPicker(false)
   }
 
   const handleUrlSubmit = () => {
@@ -85,15 +122,17 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
   }
 
   const removeImage = () => {
-    onUpdate({ url: undefined, altText: undefined })
+    onUpdate({ url: undefined, altText: undefined, mediaId: undefined })
   }
 
   if (readOnly) {
     return block.url ? (
       <div className="w-full">
-        <img
+        <Image
           src={block.url}
           alt={block.altText || ''}
+          width={block.width || 800}
+          height={block.height || 600}
           className="max-w-full h-auto rounded-lg"
           loading="lazy"
         />
@@ -113,9 +152,11 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
         "relative group rounded-lg overflow-hidden",
         isSelected && "ring-2 ring-blue-500"
       )}>
-        <img
+        <Image
           src={block.url}
           alt={block.altText || ''}
+          width={block.width || 800}
+          height={block.height || 600}
           className="w-full h-auto max-h-96 object-cover"
         />
         
@@ -139,6 +180,15 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
             >
               <ExternalLink className="h-4 w-4 mr-1" />
               Change URL
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMediaPicker(true)}
+              className="bg-white"
+            >
+              <Library className="h-4 w-4 mr-1" />
+              Media Library
             </Button>
             <Button
               variant="outline"
@@ -250,6 +300,14 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
             </Button>
             <Button
               variant="outline"
+              onClick={() => setShowMediaPicker(true)}
+              className="gap-2"
+            >
+              <Library className="h-4 w-4" />
+              Media Library
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setShowUrlInput(true)}
               className="gap-2"
             >
@@ -297,6 +355,15 @@ export function ImageBlock({ block, onUpdate, isSelected, readOnly = false }: Im
           />
         </>
       )}
+
+      {/* Media Picker Modal */}
+      <MediaPicker
+        isOpen={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onSelect={handleMediaSelect}
+        allowedTypes={['image/*']}
+        multiple={false}
+      />
     </div>
   )
 }

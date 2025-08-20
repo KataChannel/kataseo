@@ -95,19 +95,41 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
+    // Validate required fields
+    if (!body.title || !body.slug) {
+      return NextResponse.json(
+        { error: 'Title and slug are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if slug already exists
+    const existingPost = await prisma.post.findUnique({
+      where: { slug: body.slug }
+    })
+
+    if (existingPost) {
+      return NextResponse.json(
+        { error: 'A post with this slug already exists' },
+        { status: 400 }
+      )
+    }
+
     const post = await prisma.post.create({
       data: {
         title: body.title,
-        slug: body.slug || body.title.toLowerCase().replace(/\s+/g, '-'),
+        slug: body.slug,
         content: body.content || [],
-        metaTitle: body.metaTitle,
-        metaDescription: body.metaDescription,
-        status: body.status || 'DRAFT',
+        excerpt: body.excerpt,
+        metaTitle: body.seoTitle || body.title,
+        metaDescription: body.seoDescription || body.excerpt,
+        canonicalUrl: body.canonicalUrl,
+        status: body.status === 'published' ? 'PUBLISHED' : 'DRAFT',
         authorId: '1', // TODO: Get from auth
-        categories: body.categoryIds ? {
-          connect: body.categoryIds.map((id: string) => ({ id }))
+        categories: body.categoryId ? {
+          connect: { id: body.categoryId }
         } : undefined,
-        tags: body.tagIds ? {
+        tags: body.tagIds && body.tagIds.length > 0 ? {
           connect: body.tagIds.map((id: string) => ({ id }))
         } : undefined
       },
@@ -139,6 +161,17 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Error creating post:', error)
+    
+    // Handle Prisma unique constraint errors
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        return NextResponse.json(
+          { error: 'A post with this slug already exists' },
+          { status: 400 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create post' },
       { status: 500 }
