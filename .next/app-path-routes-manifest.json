@@ -1,0 +1,22 @@
+{
+  "/[slug]/page": "/[slug]",
+  "/_not-found/page": "/_not-found",
+  "/admin/media/page": "/admin/media",
+  "/admin/posts/[id]/page": "/admin/posts/[id]",
+  "/admin/posts/page": "/admin/posts",
+  "/api/auth/login/route": "/api/auth/login",
+  "/api/auth/register/route": "/api/auth/register",
+  "/api/auth/verify/route": "/api/auth/verify",
+  "/api/categories/route": "/api/categories",
+  "/api/media/[id]/route": "/api/media/[id]",
+  "/api/media/route": "/api/media",
+  "/api/posts/[id]/route": "/api/posts/[id]",
+  "/api/posts/route": "/api/posts",
+  "/api/sitemap/route": "/api/sitemap",
+  "/api/tags/route": "/api/tags",
+  "/category/[slug]/page": "/category/[slug]",
+  "/favicon.ico/route": "/favicon.ico",
+  "/page": "/",
+  "/robots.txt/route": "/robots.txt",
+  "/tag/[slug]/page": "/tag/[slug]"
+}

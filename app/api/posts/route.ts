@@ -1,30 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { z } from 'zod'
-import { 
-  slugify, 
-  generateUniqueSlug, 
-  validatePostData, 
-  generateMetaTitle, 
-  generateMetaDescription 
-} from '@/lib/utils/slugify'
-
-// Schema for creating/updating posts
-const postSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
-  content: z.any(), // JSON content
-  metaTitle: z.string().max(60, 'Meta title must be less than 60 characters').optional(),
-  metaDescription: z.string().max(160, 'Meta description must be less than 160 characters').optional(),
-  slug: z.string().optional(),
-  excerpt: z.string().max(300, 'Excerpt must be less than 300 characters').optional(),
-  featuredImage: z.string().url('Invalid image URL').optional(),
-  categoryId: z.string().optional(),
-  isPublished: z.boolean().default(false),
-  status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
-  categoryIds: z.array(z.string()).optional(),
-  tagIds: z.array(z.string()).optional(),
-})
 
 // GET /api/posts - Get all posts with pagination and filters
 export async function GET(request: NextRequest) {
@@ -61,7 +37,6 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    // Get posts with relations
     const [posts, total] = await Promise.all([
       prisma.post.findMany({
         where,
@@ -69,16 +44,21 @@ export async function GET(request: NextRequest) {
           author: {
             select: {
               id: true,
-              email: true,
-              role: true
+              email: true
             }
           },
-          categories: true,
-          tags: true,
-          media: true,
-          _count: {
+          categories: {
             select: {
-              media: true
+              id: true,
+              name: true,
+              slug: true
+            }
+          },
+          tags: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
             }
           }
         },
@@ -86,103 +66,81 @@ export async function GET(request: NextRequest) {
           createdAt: 'desc'
         },
         skip,
-        take: limit,
+        take: limit
       }),
-      prisma.post.count({ where }),
+      prisma.post.count({ where })
     ])
 
     return NextResponse.json({
       posts,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        currentPage: page,
+        limit
+      }
     })
+
   } catch (error) {
     console.error('Error fetching posts:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch posts' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/posts - Create new post
+// POST /api/posts - Create a new post
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     
-    // Validate input data with enhanced validation
-    const validation = validatePostData(body)
-    if (!validation.success) {
-      return NextResponse.json(
-        { 
-          error: 'Validation failed', 
-          details: validation.error.issues 
-        },
-        { status: 400 }
-      )
-    }
-    
-    const { title, content, metaTitle, metaDescription, slug, ...rest } = validation.data
-    
-    // Get author ID from request (you'll need to implement auth middleware)
-    const authorId = request.headers.get('x-user-id') || '1' // Temporary fallback
-    
-    // Generate slug from title if not provided
-    let finalSlug = slug || slugify(title)
-    
-    // Check if slug already exists and make it unique
-    const existingSlugs = await prisma.post.findMany({
-      select: { slug: true }
-    }).then(posts => posts.map(p => p.slug))
-    
-    finalSlug = generateUniqueSlug(finalSlug, existingSlugs)
-    
-    // Generate SEO metadata
-    const finalMetaTitle = generateMetaTitle(title, metaTitle)
-    const finalMetaDescription = generateMetaDescription(content || [], metaDescription)
-    
     const post = await prisma.post.create({
       data: {
-        title,
-        slug: finalSlug,
-        content: content || [],
-        metaTitle: finalMetaTitle,
-        metaDescription: finalMetaDescription,
-        status: rest.isPublished ? 'PUBLISHED' : 'DRAFT',
-        authorId,
-        ...(rest.categoryId && {
-          categories: {
-            connect: { id: rest.categoryId }
-          }
-        })
+        title: body.title,
+        slug: body.slug || body.title.toLowerCase().replace(/\s+/g, '-'),
+        content: body.content || [],
+        metaTitle: body.metaTitle,
+        metaDescription: body.metaDescription,
+        status: body.status || 'DRAFT',
+        authorId: '1', // TODO: Get from auth
+        categories: body.categoryIds ? {
+          connect: body.categoryIds.map((id: string) => ({ id }))
+        } : undefined,
+        tags: body.tagIds ? {
+          connect: body.tagIds.map((id: string) => ({ id }))
+        } : undefined
       },
       include: {
         author: {
           select: {
             id: true,
-            email: true,
-            role: true
+            email: true
           }
         },
-        categories: true,
-        tags: true,
-        media: true,
-      },
+        categories: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        tags: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        }
+      }
     })
 
     return NextResponse.json(post, { status: 201 })
+
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Validation error', details: error.issues },
-        { status: 400 }
-      )
-    }
-    
     console.error('Error creating post:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to create post' },
       { status: 500 }
     )
   }

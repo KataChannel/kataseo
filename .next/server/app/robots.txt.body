@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /admin/
+Disallow: /api/
+
+# Allow important pages
+Allow: /admin/media/
+
+# Sitemap
+Sitemap: http://localhost:3000/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Host
+Host: http://localhost:3000

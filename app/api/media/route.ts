@@ -39,164 +39,36 @@ export async function GET(request: NextRequest) {
       postId: searchParams.get('postId'),
     })
 
-    // Build where clause
+    // Build where clause for search
     const where: Prisma.MediaWhereInput = {}
     
     if (query.search) {
       where.OR = [
         { filename: { contains: query.search, mode: 'insensitive' } },
-        { originalName: { contains: query.search, mode: 'insensitive' } },
-        { altText: { contains: query.search, mode: 'insensitive' } }
+        { originalName: { contains: query.search, mode: 'insensitive' } }
       ]
     }
 
+    // Type filter
+    if (query.type !== 'all') {
+      if (query.type === 'image') {
+        where.mimeType = { in: ALLOWED_IMAGE_TYPES }
+      } else if (query.type === 'video') {
+        where.mimeType = { in: ALLOWED_VIDEO_TYPES }
+      } else if (query.type === 'document') {
+        where.mimeType = { in: ALLOWED_DOCUMENT_TYPES }
+      }
+    }
+
+    // If postId is specified, only return media for that post
     if (query.postId) {
       where.postId = query.postId
     }
 
-    if (query.type !== 'all') {
-      switch (query.type) {
-        case 'image':
-          where.mimeType = { startsWith: 'image/' }
-          break
-        case 'video':
-          where.mimeType = { startsWith: 'video/' }
-          break
-        case 'document':
-          where.AND = [
-            { NOT: { mimeType: { startsWith: 'image/' } } },
-            { NOT: { mimeType: { startsWith: 'video/' } } }
-          ]
-          break
-      }
-    }
-
-    // If no postId specified, return general media library
-    if (!query.postId) {
-      const total = await prisma.media.count({ where })
-      
-      const media = await prisma.media.findMany({
-        where,
-        include: {
-          uploadedBy: {
-            select: {
-              id: true,
-              email: true
-            }
-          }
-        },
-        orderBy: {
-          uploadedAt: 'desc'
-        },
-        skip: (query.page - 1) * query.limit,
-        take: query.limit
-      })
-
-      return NextResponse.json(media)
-    }
-
-    // Legacy behavior for post-specific media
+    const skip = (query.page - 1) * query.limit
+    
     const media = await prisma.media.findMany({
       where,
-      orderBy: {
-        uploadedAt: 'desc'
-      },
-    })
-
-    return NextResponse.json(media)
-  } catch (error) {
-    console.error('Error fetching media:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/media - Upload file to MinIO and save to database
-export async function POST(request: NextRequest) {
-  try {
-    await ensureBucketExists()
-
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const altText = formData.get('altText') as string
-    const postId = formData.get('postId') as string
-
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
-      )
-    }
-
-    // Validate form data (postId is now optional)
-    const validatedData = mediaUploadSchema.parse({ altText, postId })
-
-    // Validate file type
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { 
-          error: 'Invalid file type', 
-          allowedTypes: ALLOWED_TYPES 
-        },
-        { status: 400 }
-      )
-    }
-
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      return NextResponse.json(
-        { 
-          error: 'File too large', 
-          maxSize: `${MAX_FILE_SIZE / (1024 * 1024)}MB` 
-        },
-        { status: 400 }
-      )
-    }
-
-    // Check if post exists (only if postId provided)
-    if (validatedData.postId) {
-      const post = await prisma.post.findUnique({
-        where: { id: validatedData.postId },
-      })
-
-      if (!post) {
-        return NextResponse.json(
-          { error: 'Post not found' },
-          { status: 404 }
-        )
-      }
-    }
-
-    // Generate unique filename
-    const fileExtension = file.name.split('.').pop()
-    const filename = `${uuidv4()}.${fileExtension}`
-    const objectName = `uploads/${filename}`
-
-    // Convert file to buffer
-    const buffer = Buffer.from(await file.arrayBuffer())
-
-    // Upload to MinIO
-    await minioClient.putObject(bucketName, objectName, buffer, file.size, {
-      'Content-Type': file.type,
-    })
-
-    // Generate public URL
-    const url = `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}/${objectName}`
-
-    // Save metadata to database
-    const media = await prisma.media.create({
-      data: {
-        filename,
-        originalName: file.name,
-        url,
-        altText: validatedData.altText || file.name,
-        mimeType: file.type,
-        size: file.size,
-        postId: validatedData.postId || null,
-        uploadedById: '1' // TODO: Get from JWT token/auth
-      },
       include: {
         uploadedBy: {
           select: {
@@ -204,22 +76,163 @@ export async function POST(request: NextRequest) {
             email: true
           }
         }
-      }
+      },
+      orderBy: {
+        uploadedAt: 'desc'
+      },
+      skip,
+      take: query.limit
     })
 
-    return NextResponse.json(media, { status: 201 })
+    return NextResponse.json(media)
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
+    console.error('Error fetching media:', error)
+    return NextResponse.json(
+      { error: 'Failed to fetch media' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST /api/media - Upload media files
+export async function POST(request: NextRequest) {
+  try {
+    await ensureBucketExists()
+
+    const formData = await request.formData()
+    const files = formData.getAll('files') as File[]
+    const altText = formData.get('altText') as string
+    const postId = formData.get('postId') as string | null
+
+    if (!files.length) {
       return NextResponse.json(
-        { error: 'Validation error', details: error.issues },
+        { error: 'No files provided' },
         { status: 400 }
       )
     }
-    
-    console.error('Error uploading media:', error)
+
+    const uploadResults = []
+
+    for (const file of files) {
+      // Validate file type
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { error: `File type ${file.type} is not allowed` },
+          { status: 400 }
+        )
+      }
+
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        return NextResponse.json(
+          { error: `File size exceeds ${MAX_FILE_SIZE / (1024 * 1024)}MB limit` },
+          { status: 400 }
+        )
+      }
+
+      // Generate unique filename
+      const fileExtension = file.name.split('.').pop()
+      const uniqueFilename = `${uuidv4()}.${fileExtension}`
+
+      // Convert file to buffer
+      const buffer = Buffer.from(await file.arrayBuffer())
+
+      // Upload to MinIO
+      await minioClient.putObject(
+        bucketName,
+        uniqueFilename,
+        buffer,
+        file.size,
+        {
+          'Content-Type': file.type,
+          'X-Original-Name': file.name
+        }
+      )
+
+      // Save metadata to database
+      const mediaRecord = await prisma.media.create({
+        data: {
+          filename: uniqueFilename,
+          originalName: file.name,
+          mimeType: file.type,
+          size: file.size,
+          url: `${process.env.NEXT_PUBLIC_MINIO_ENDPOINT}/${bucketName}/${uniqueFilename}`,
+          uploadedById: '1', // TODO: Get from auth
+          altText: altText || null,
+          postId: postId || null
+        },
+        include: {
+          uploadedBy: {
+            select: {
+              id: true,
+              email: true
+            }
+          }
+        }
+      })
+
+      uploadResults.push(mediaRecord)
+    }
+
+    return NextResponse.json(uploadResults)
+
+  } catch (error) {
+    console.error('Error uploading files:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to upload files' },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/media - Bulk delete media files
+export async function DELETE(request: NextRequest) {
+  try {
+    const { ids } = await request.json()
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return NextResponse.json(
+        { error: 'No media IDs provided' },
+        { status: 400 }
+      )
+    }
+
+    // Get media records to find filenames
+    const mediaRecords = await prisma.media.findMany({
+      where: {
+        id: { in: ids }
+      },
+      select: {
+        id: true,
+        filename: true
+      }
+    })
+
+    // Delete files from MinIO
+    for (const record of mediaRecords) {
+      try {
+        await minioClient.removeObject(bucketName, record.filename)
+      } catch (error) {
+        console.error(`Failed to delete file ${record.filename} from MinIO:`, error)
+      }
+    }
+
+    // Delete records from database
+    await prisma.media.deleteMany({
+      where: {
+        id: { in: ids }
+      }
+    })
+
+    return NextResponse.json({
+      message: `Successfully deleted ${mediaRecords.length} media files`
+    })
+
+  } catch (error) {
+    console.error('Error deleting media files:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete media files' },
       { status: 500 }
     )
   }

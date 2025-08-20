@@ -11,11 +11,12 @@ const mediaUpdateSchema = z.object({
 // GET /api/media/[id] - Get single media file
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const media = await prisma.media.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         uploadedBy: {
           select: {
@@ -34,38 +35,46 @@ export async function GET(
     }
 
     return NextResponse.json(media)
+
   } catch (error) {
     console.error('Error fetching media:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch media' },
       { status: 500 }
     )
   }
 }
 
-// PATCH /api/media/[id] - Update media metadata
+// PATCH /api/media/[id] - Update media file
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const body = await request.json()
+    
+    // Validate the request body
     const validatedData = mediaUpdateSchema.parse(body)
 
-    const media = await prisma.media.findUnique({
-      where: { id: params.id }
+    // Check if media exists
+    const existingMedia = await prisma.media.findUnique({
+      where: { id }
     })
 
-    if (!media) {
+    if (!existingMedia) {
       return NextResponse.json(
         { error: 'Media not found' },
         { status: 404 }
       )
     }
 
+    // Update the media record
     const updatedMedia = await prisma.media.update({
-      where: { id: params.id },
-      data: validatedData,
+      where: { id },
+      data: {
+        altText: validatedData.altText
+      },
       include: {
         uploadedBy: {
           select: {
@@ -77,6 +86,7 @@ export async function PATCH(
     })
 
     return NextResponse.json(updatedMedia)
+
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -84,10 +94,10 @@ export async function PATCH(
         { status: 400 }
       )
     }
-    
+
     console.error('Error updating media:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update media' },
       { status: 500 }
     )
   }
@@ -96,11 +106,17 @@ export async function PATCH(
 // DELETE /api/media/[id] - Delete media file
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
+    // Get media record first to get filename
     const media = await prisma.media.findUnique({
-      where: { id: params.id }
+      where: { id },
+      select: {
+        filename: true
+      }
     })
 
     if (!media) {
@@ -110,31 +126,27 @@ export async function DELETE(
       )
     }
 
-    // Extract object name from URL
-    const urlParts = media.url.split('/')
-    const objectName = urlParts.slice(-2).join('/') // e.g., "uploads/filename.jpg"
-
+    // Delete file from MinIO
     try {
-      // Delete from MinIO
-      await minioClient.removeObject(bucketName, objectName)
-    } catch (storageError) {
-      console.error('Error deleting from storage:', storageError)
-      // Continue with database deletion even if storage fails
+      await minioClient.removeObject(bucketName, media.filename)
+    } catch (error) {
+      console.error(`Failed to delete file ${media.filename} from MinIO:`, error)
+      // Continue with database deletion even if MinIO deletion fails
     }
 
-    // Delete from database
+    // Delete record from database
     await prisma.media.delete({
-      where: { id: params.id }
+      where: { id }
     })
 
-    return NextResponse.json(
-      { message: 'Media deleted successfully' },
-      { status: 200 }
-    )
+    return NextResponse.json({
+      message: 'Media deleted successfully'
+    })
+
   } catch (error) {
     console.error('Error deleting media:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to delete media' },
       { status: 500 }
     )
   }

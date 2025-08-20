@@ -1,8 +1,22 @@
 {
+  "/[slug]/page": "app/[slug]/page.js",
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/media/page": "app/admin/media/page.js",
+  "/admin/posts/[id]/page": "app/admin/posts/[id]/page.js",
   "/admin/posts/page": "app/admin/posts/page.js",
+  "/api/auth/login/route": "app/api/auth/login/route.js",
+  "/api/auth/register/route": "app/api/auth/register/route.js",
+  "/api/auth/verify/route": "app/api/auth/verify/route.js",
+  "/api/categories/route": "app/api/categories/route.js",
+  "/api/media/[id]/route": "app/api/media/[id]/route.js",
   "/api/media/route": "app/api/media/route.js",
+  "/api/posts/[id]/route": "app/api/posts/[id]/route.js",
+  "/api/posts/route": "app/api/posts/route.js",
+  "/api/sitemap/route": "app/api/sitemap/route.js",
+  "/api/tags/route": "app/api/tags/route.js",
+  "/category/[slug]/page": "app/category/[slug]/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/tag/[slug]/page": "app/tag/[slug]/page.js"
 }

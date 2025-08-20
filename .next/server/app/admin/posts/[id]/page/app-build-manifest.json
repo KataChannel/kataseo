@@ -3,16 +3,16 @@
     "/admin/posts/[id]/page": [
       "static/chunks/ff1a16fafef87110.js",
       "static/chunks/7dd66bdf8a7e5707.js",
-      "static/chunks/6452d44eed3782f7.css",
-      "static/chunks/cf7e570c8469e334.js",
+      "static/chunks/e2121f6101fb86bc.css",
+      "static/chunks/f1767621709837c5.js",
       "static/chunks/47fdf8d423bbdf04.js",
-      "static/chunks/982a36a9e00a7f8e.js",
-      "static/chunks/5d04425fe4d09b7f.js",
-      "static/chunks/6a06277139e60d90.js",
+      "static/chunks/c02d41fd9410070f.js",
+      "static/chunks/6812b9d1c96b625e.js",
+      "static/chunks/3996deeca1881b47.js",
       "static/chunks/47f477e3d2ef265b.js",
       "static/chunks/202abb9aed9e828b.js",
       "static/chunks/0656f51f27ce398d.js",
-      "static/chunks/turbopack-84453bf6cb9f86f7.js"
+      "static/chunks/turbopack-55f11af11a3427df.js"
     ]
   }
 }

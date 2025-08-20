@@ -15,7 +15,6 @@ import {
   Type, 
   Heading1, 
   Heading2, 
-  Heading3,
   Image, 
   PlayCircle, 
   Code,
