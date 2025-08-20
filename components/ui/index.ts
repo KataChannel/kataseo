@@ -21,3 +21,8 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuRadioGroup,
 } from './DropdownMenu';
+
+// Performance & Optimization Components
+export { OptimizedImage } from './OptimizedImage';
+export { createLazyComponent, useLazyLoading } from './LazyLoading';
+export { PerformanceMonitor, usePerformanceMonitoring } from './PerformanceMonitor';

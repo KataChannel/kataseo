@@ -22,10 +22,18 @@ const customJestConfig = {
     'contexts/**/*.{ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
-    '!**/.next/**'
+    '!**/.next/**',
   ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  moduleDirectories: ['node_modules', '<rootDir>/'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  transform: {},
+  testPathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/node_modules/',
+  ],
+  transformIgnorePatterns: [
+    '/node_modules/',
+    '^.+\.module\.(css|sass|scss)$',
+  ],
 }
 
 module.exports = createJestConfig(customJestConfig)

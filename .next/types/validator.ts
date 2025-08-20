@@ -119,6 +119,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/unauthorized">
 }
 
+// Validate ../../app/api/analytics/performance/route.ts
+{
+  const handler = {} as typeof import("../../app/api/analytics/performance/route.js")
+  handler satisfies RouteHandlerConfig<"/api/analytics/performance">
+}
+
 // Validate ../../app/api/auth/login/route.ts
 {
   const handler = {} as typeof import("../../app/api/auth/login/route.js")
