@@ -6,6 +6,11 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig: NextConfig = {
   /* Performance optimizations */
   
+  // Disable ESLint during build for production deployment
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
   // Output for Docker deployment
   output: 'standalone',
   

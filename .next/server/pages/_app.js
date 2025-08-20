@@ -1,4 +1,1 @@
-var R=require("../chunks/ssr/[turbopack]_runtime.js")("server/pages/_app.js")
-R.c("server/chunks/ssr/[root-of-the-server]__fdefc251._.js")
-R.m(6555)
-module.exports=R.m(6555).exports
+"use strict";(()=>{var a={};a.id=636,a.ids=[636],a.modules={8732:a=>{a.exports=require("react/jsx-runtime")},82015:a=>{a.exports=require("react")}};var b=require("../webpack-runtime.js");b.C(a);var c=b.X(0,[628],()=>b(b.s=625));module.exports=c})();
