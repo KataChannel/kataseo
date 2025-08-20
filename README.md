@@ -1,132 +1,232 @@
-# KataSEO - Website Builder Chuẩn SEO
+# Website SEO - Next.js CMS
 
-KataSEO là một website builder mạnh mẽ với CMS tích hợp và block editor tiên tiến, được tối ưu hóa cho SEO. Xây dựng trên Next.js 15 và sử dụng các công nghệ hiện đại nhất.
+A modern Content Management System built with Next.js, TypeScript, Prisma, and PostgreSQL.
 
-## ✨ Tính năng chính
+## Features
 
-### 🎨 Block Editor
-- **Trình chỉnh sửa khối trực quan**: Hỗ trợ kéo thả, chỉnh sửa inline
-- **Đa dạng loại khối**: Paragraph, Heading, Image, List, Quote, Code, Divider
-- **Responsive**: Tương thích trên mọi thiết bị
-- **Real-time**: Xem trước ngay lập tức
+- 🚀 **Next.js 15** with App Router and TypeScript
+- 🎨 **Tailwind CSS** with custom theme (Inter font, primary color: #2563eb)
+- 🗄️ **Prisma ORM** with PostgreSQL database
+- 🔐 **JWT Authentication** with role-based access control
+- 📁 **MinIO Object Storage** for media files
+- 🐳 **Docker Compose** for easy development setup
+- 📊 **PgAdmin** for database management
 
-### 🔍 SEO Optimization
-- **Meta tags tự động**: Title, Description, Keywords, OG Image
-- **Structured data**: Schema.org markup
-- **Sitemap.xml tự động**: Cập nhật theo nội dung
-- **Robots.txt**: Cấu hình crawl tự động
-- **URL thân thiện**: Clean URLs với slug tùy chỉnh
+## Quick Start
 
-### 📊 CMS Mạnh mẽ
-- **Quản lý trang và bài viết**: CRUD operations hoàn chỉnh
-- **Phân quyền**: Admin dashboard bảo mật
-- **Draft/Published**: Kiểm soát trạng thái xuất bản
-- **Media management**: Upload và quản lý hình ảnh
-- **Analytics**: Thống kê truy cập cơ bản
+### Prerequisites
 
-### ⚡ Hiệu suất cao
-- **Next.js 15**: App Router, Server Components
-- **Prisma ORM**: Type-safe database operations
-- **SQLite**: Database nhẹ, dễ deploy
-- **TailwindCSS v4**: Styling hiện đại
-- **TypeScript**: Type safety hoàn toàn
-
-## 🚀 Cài đặt
-
-### Yêu cầu
 - Node.js 18+
-- npm/yarn/pnpm/bun
+- Docker and Docker Compose (install with: `sudo apt install docker.io docker-compose` on Ubuntu/Debian)
+- Git
 
-### Bước 1: Clone repository
+> **Note**: If Docker is not installed, you can still run the Next.js application locally, but you'll need to set up PostgreSQL and MinIO services manually.
+
+### Installation
+
+1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/kataseo.git
-cd kataseo
+git clone <repository-url>
+cd websiteseo
 ```
 
-### Bước 2: Cài đặt dependencies
+2. **Install dependencies**
 ```bash
 npm install
-# hoặc
-yarn install
-# hoặc
-bun install
 ```
 
-### Bước 3: Khởi tạo database
+3. **Set up environment variables**
 ```bash
-npx prisma migrate dev --name init
-npx prisma generate
+cp .env.example .env
+# Edit .env with your preferred values
 ```
 
-### Bước 4: Chạy development server
+4. **Start services with Docker**
+```bash
+npm run docker:up
+```
+
+This will start:
+- Next.js app: http://localhost:3000
+- PostgreSQL: localhost:5432
+- PgAdmin: http://localhost:5050 (admin@websiteseo.com / admin123)
+- MinIO API: http://localhost:9000
+- MinIO Console: http://localhost:9001 (minioadmin / minioadmin123)
+
+5. **Set up database**
+```bash
+npm run db:migrate
+```
+
+6. **Start development server**
 ```bash
 npm run dev
-# hoặc
-yarn dev
-# hoặc
-bun dev
 ```
 
-Truy cập [http://localhost:3000](http://localhost:3000) để xem website.
+## API Endpoints
 
-## 📁 Cấu trúc dự án
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/verify` - Verify JWT token
+
+### Posts
+- `GET /api/posts` - Get posts (with pagination and filters)
+- `POST /api/posts` - Create new post
+- `GET /api/posts/[id]` - Get single post
+- `PUT /api/posts/[id]` - Update post
+- `DELETE /api/posts/[id]` - Delete post
+
+### Media
+- `POST /api/media` - Upload file
+- `GET /api/media` - Get media files
+
+### Categories & Tags
+- `GET /api/categories` - Get all categories
+- `POST /api/categories` - Create category
+- `GET /api/tags` - Get all tags
+- `POST /api/tags` - Create tag
+
+## Database Schema
+
+### User
+- id (UUID)
+- email (unique)
+- password (hashed)
+- role (ADMIN, EDITOR, GUEST)
+
+### Post
+- id (UUID)
+- title
+- slug (unique)
+- content (JSONB)
+- metaTitle, metaDescription
+- status (DRAFT, PUBLISHED)
+- authorId (FK to User)
+
+### Category & Tag
+- Many-to-many relationship with Posts
+
+### Media
+- id (UUID)
+- url
+- altText
+- type (image/video)
+- size
+- postId (FK to Post)
+
+## Development Commands
+
+```bash
+# Database
+npm run db:migrate        # Run migrations
+npm run db:generate       # Generate Prisma client
+npm run db:studio         # Open Prisma Studio
+
+# Docker
+npm run docker:up         # Start all services
+npm run docker:down       # Stop all services
+npm run docker:build      # Rebuild and start
+
+# Development
+npm run dev               # Start development server
+npm run build            # Build for production
+npm run start            # Start production server
+```
+
+## Environment Variables
+
+```env
+# Database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/websiteseo"
+
+# MinIO
+MINIO_ACCESS_KEY="minioadmin"
+MINIO_SECRET_KEY="minioadmin123"
+MINIO_ENDPOINT="localhost"
+MINIO_PORT="9000"
+MINIO_BUCKET="websiteseo-media"
+
+# JWT
+JWT_SECRET="your-super-secret-jwt-key"
+```
+
+## Project Structure
 
 ```
-kataseo/
-├── app/                    # Next.js App Router
-│   ├── admin/             # Admin dashboard
-│   ├── api/               # API routes
-│   ├── [slug]/           # Dynamic pages
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Homepage
-│   ├── sitemap.ts        # Sitemap generator
-│   └── robots.ts         # Robots.txt generator
-├── components/           # React components
-│   ├── admin/           # Admin components
-│   ├── editor/          # Block editor components
-│   └── ui/              # UI components
-├── lib/                 # Utility libraries
-│   ├── prisma.ts        # Database client
-│   ├── seo.ts           # SEO utilities
-│   ├── format.ts        # Text formatting
-│   └── utils.ts         # General utilities
-├── prisma/              # Database schema
-│   ├── schema.prisma    # Database schema
-│   └── migrations/      # Migration files
-├── types/               # TypeScript types
-│   └── editor.ts        # Editor types
-└── public/              # Static files
+websiteseo/
+├── app/
+│   ├── api/          # API routes
+│   ├── globals.css   # Global styles
+│   └── ...
+├── components/       # React components
+├── lib/             # Utility functions
+│   ├── prisma.ts    # Prisma client
+│   ├── jwt.ts       # JWT utilities
+│   └── minio.ts     # MinIO client
+├── prisma/
+│   └── schema.prisma
+├── docker/
+│   └── Dockerfile
+└── docker-compose.yml
 ```
 
-## 🎯 Sử dụng
+## API Usage Examples
 
-### Admin Dashboard
-Truy cập `/admin` để vào trang quản trị:
-- **Tổng quan**: Dashboard với thống kê
-- **Trang**: Quản lý các trang tĩnh
-- **Bài viết**: Quản lý blog posts
-- **Thêm mới**: Tạo nội dung mới
-- **Cài đặt**: Cấu hình website
+### Authentication
+```javascript
+// Register
+const response = await fetch('/api/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'password123',
+    role: 'EDITOR'
+  })
+})
 
-### Tạo nội dung
-1. Vào `/admin/pages/create` hoặc `/admin/posts/create`
-2. Nhập tiêu đề và nội dung
-3. Sử dụng block editor để tạo nội dung phong phú
-4. Cấu hình SEO metadata
-5. Lưu nháp hoặc xuất bản
+// Login
+const loginResponse = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'password123'
+  })
+})
+```
 
-### Block Editor
-- **Thêm khối**: Click button "Thêm khối"
-- **Chỉnh sửa**: Click vào khối để chỉnh sửa
-- **Di chuyển**: Kéo thả để sắp xếp
-- **Xóa/Sao chép**: Menu context trên mỗi khối
+### Posts
+```javascript
+// Create post
+const postResponse = await fetch('/api/posts', {
+  method: 'POST',
+  headers: { 
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    title: 'My Blog Post',
+    content: { blocks: [{ type: 'paragraph', data: { text: 'Hello world!' } }] },
+    metaTitle: 'SEO Title',
+    metaDescription: 'SEO Description',
+    status: 'PUBLISHED',
+    categoryIds: ['category-uuid'],
+    tagIds: ['tag-uuid']
+  })
+})
+```
 
-## 🚀 Deploy
+### Media Upload
+```javascript
+const formData = new FormData()
+formData.append('file', file)
+formData.append('altText', 'Image description')
+formData.append('postId', 'post-uuid')
 
-### Vercel (Recommended)
-1. Push code lên GitHub
-2. Import vào Vercel
-3. Add environment variables
-4. Deploy tự động
-
-Được tạo với ❤️ bởi [KataSEO Team](https://github.com/kataseo)
+const mediaResponse = await fetch('/api/media', {
+  method: 'POST',
+  body: formData
+})
+```
