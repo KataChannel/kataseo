@@ -59,6 +59,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/admin/media">
 }
 
+// Validate ../../app/admin/page.tsx
+{
+  const handler = {} as typeof import("../../app/admin/page.js")
+  handler satisfies AppPageConfig<"/admin">
+}
+
 // Validate ../../app/admin/posts/[id]/page.tsx
 {
   const handler = {} as typeof import("../../app/admin/posts/[id]/page.js")
@@ -77,6 +83,18 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/admin/posts">
 }
 
+// Validate ../../app/auth/login/page.tsx
+{
+  const handler = {} as typeof import("../../app/auth/login/page.js")
+  handler satisfies AppPageConfig<"/auth/login">
+}
+
+// Validate ../../app/auth/register/page.tsx
+{
+  const handler = {} as typeof import("../../app/auth/register/page.js")
+  handler satisfies AppPageConfig<"/auth/register">
+}
+
 // Validate ../../app/category/[slug]/page.tsx
 {
   const handler = {} as typeof import("../../app/category/[slug]/page.js")
@@ -93,6 +111,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../app/tag/[slug]/page.js")
   handler satisfies AppPageConfig<"/tag/[slug]">
+}
+
+// Validate ../../app/unauthorized/page.tsx
+{
+  const handler = {} as typeof import("../../app/unauthorized/page.js")
+  handler satisfies AppPageConfig<"/unauthorized">
 }
 
 // Validate ../../app/api/auth/login/route.ts
@@ -153,6 +177,18 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../app/api/tags/route.js")
   handler satisfies RouteHandlerConfig<"/api/tags">
+}
+
+// Validate ../../app/api/users/[id]/route.ts
+{
+  const handler = {} as typeof import("../../app/api/users/[id]/route.js")
+  handler satisfies RouteHandlerConfig<"/api/users/[id]">
+}
+
+// Validate ../../app/api/users/route.ts
+{
+  const handler = {} as typeof import("../../app/api/users/route.js")
+  handler satisfies RouteHandlerConfig<"/api/users">
 }
 
 // Validate ../../app/robots.txt/route.ts

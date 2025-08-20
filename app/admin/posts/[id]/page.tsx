@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { PostEditor } from '@/components/admin/posts/PostEditor'
+import { AdminLayout } from '@/components/admin/AdminLayout'
+import { RequirePermission } from '@/components/auth/ProtectedRoute'
 import { Block } from '@/types/editor'
 
 interface Post {
@@ -99,22 +101,24 @@ export default function EditPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PostEditor
-        postId={postId}
-        initialData={{
-          title: post.title,
-          slug: post.slug,
-          excerpt: post.excerpt || '',
-          content: Array.isArray(post.content) ? post.content : [],
-          category: post.categories[0],
-          tags: post.tags,
-          status: post.status.toLowerCase() as 'draft' | 'published',
-          seoTitle: post.metaTitle,
-          seoDescription: post.metaDescription,
-          canonicalUrl: post.canonicalUrl
-        }}
-      />
-    </div>
+    <RequirePermission permissions={['posts:update']}>
+      <AdminLayout>
+        <PostEditor
+          postId={postId}
+          initialData={{
+            title: post.title,
+            slug: post.slug,
+            excerpt: post.excerpt || '',
+            content: Array.isArray(post.content) ? post.content : [],
+            category: post.categories[0],
+            tags: post.tags,
+            status: post.status.toLowerCase() as 'draft' | 'published',
+            seoTitle: post.metaTitle,
+            seoDescription: post.metaDescription,
+            canonicalUrl: post.canonicalUrl
+          }}
+        />
+      </AdminLayout>
+    </RequirePermission>
   )
 }
