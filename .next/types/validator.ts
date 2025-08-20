@@ -65,6 +65,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/admin/posts/[id]">
 }
 
+// Validate ../../app/admin/posts/create/page.tsx
+{
+  const handler = {} as typeof import("../../app/admin/posts/create/page.js")
+  handler satisfies AppPageConfig<"/admin/posts/create">
+}
+
 // Validate ../../app/admin/posts/page.tsx
 {
   const handler = {} as typeof import("../../app/admin/posts/page.js")

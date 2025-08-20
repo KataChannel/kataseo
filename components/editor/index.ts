@@ -4,6 +4,9 @@ export { EditorProvider, useEditor } from './EditorContext'
 export { BlockToolbar, InlineBlockToolbar } from './BlockToolbar'
 export { DraggableBlock } from './DraggableBlock'
 export { PreviewPane, FloatingPreviewToggle } from './PreviewPane'
+export { MediaPicker } from './MediaPicker'
+export { TagSelector } from './TagSelector'
+export { CategorySelector } from './CategorySelector'
 
 // Individual Block Components
 export { TextBlock } from './blocks/TextBlock'

@@ -9,6 +9,9 @@ export interface Block {
   // For image blocks
   url?: string
   altText?: string
+  mediaId?: string
+  width?: number
+  height?: number
   
   // For heading blocks
   level?: 1 | 2 | 3 | 4 | 5 | 6
