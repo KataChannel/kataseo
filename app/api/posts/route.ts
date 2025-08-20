@@ -2,13 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
+import { 
+  slugify, 
+  generateUniqueSlug, 
+  validatePostData, 
+  generateMetaTitle, 
+  generateMetaDescription 
+} from '@/lib/utils/slugify'
 
 // Schema for creating/updating posts
 const postSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
+  title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
   content: z.any(), // JSON content
-  metaTitle: z.string().optional(),
-  metaDescription: z.string().optional(),
+  metaTitle: z.string().max(60, 'Meta title must be less than 60 characters').optional(),
+  metaDescription: z.string().max(160, 'Meta description must be less than 160 characters').optional(),
+  slug: z.string().optional(),
+  excerpt: z.string().max(300, 'Excerpt must be less than 300 characters').optional(),
+  featuredImage: z.string().url('Invalid image URL').optional(),
+  categoryId: z.string().optional(),
+  isPublished: z.boolean().default(false),
   status: z.enum(['DRAFT', 'PUBLISHED']).default('DRAFT'),
   categoryIds: z.array(z.string()).optional(),
   tagIds: z.array(z.string()).optional(),
@@ -98,35 +110,50 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const validatedData = postSchema.parse(body)
+    
+    // Validate input data with enhanced validation
+    const validation = validatePostData(body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed', 
+          details: validation.error.issues 
+        },
+        { status: 400 }
+      )
+    }
+    
+    const { title, content, metaTitle, metaDescription, slug, ...rest } = validation.data
     
     // Get author ID from request (you'll need to implement auth middleware)
     const authorId = request.headers.get('x-user-id') || '1' // Temporary fallback
     
-    // Generate slug from title
-    const slug = validatedData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .trim()
-
+    // Generate slug from title if not provided
+    let finalSlug = slug || slugify(title)
+    
+    // Check if slug already exists and make it unique
+    const existingSlugs = await prisma.post.findMany({
+      select: { slug: true }
+    }).then(posts => posts.map(p => p.slug))
+    
+    finalSlug = generateUniqueSlug(finalSlug, existingSlugs)
+    
+    // Generate SEO metadata
+    const finalMetaTitle = generateMetaTitle(title, metaTitle)
+    const finalMetaDescription = generateMetaDescription(content || [], metaDescription)
+    
     const post = await prisma.post.create({
       data: {
-        title: validatedData.title,
-        slug: `${slug}-${Date.now()}`, // Add timestamp to ensure uniqueness
-        content: validatedData.content,
-        metaTitle: validatedData.metaTitle,
-        metaDescription: validatedData.metaDescription,
-        status: validatedData.status,
+        title,
+        slug: finalSlug,
+        content: content || [],
+        metaTitle: finalMetaTitle,
+        metaDescription: finalMetaDescription,
+        status: rest.isPublished ? 'PUBLISHED' : 'DRAFT',
         authorId,
-        ...(validatedData.categoryIds && {
+        ...(rest.categoryId && {
           categories: {
-            connect: validatedData.categoryIds.map(id => ({ id }))
-          }
-        }),
-        ...(validatedData.tagIds && {
-          tags: {
-            connect: validatedData.tagIds.map(id => ({ id }))
+            connect: { id: rest.categoryId }
           }
         })
       },

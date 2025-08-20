@@ -6,12 +6,24 @@ import { z } from 'zod'
 // Schema for updating posts
 const updatePostSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
-  content: z.any().optional(), // JSON content
-  metaTitle: z.string().optional(),
-  metaDescription: z.string().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
-  categoryIds: z.array(z.string()).optional(),
-  tagIds: z.array(z.string()).optional(),
+  content: z.array(z.object({
+    id: z.string(),
+    type: z.enum(['text', 'image', 'heading', 'embed', 'code']),
+    content: z.string().optional(),
+    html: z.string().optional(),
+    url: z.string().optional(),
+    altText: z.string().optional(),
+    level: z.number().min(1).max(6).optional(),
+    embedUrl: z.string().optional(),
+    embedType: z.enum(['youtube', 'vimeo', 'iframe']).optional(),
+    language: z.string().optional(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional()
+  })).optional(),
+  metaTitle: z.string().max(60, 'Meta title must be 60 characters or less').optional(),
+  metaDescription: z.string().max(160, 'Meta description must be 160 characters or less').optional(),
+  status: z.enum(['draft', 'published']).optional(),
+  categories: z.array(z.string()).optional(),
 })
 
 // GET /api/posts/[id] - Get single post by ID
@@ -45,7 +57,24 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(post)
+    // Transform the response for frontend
+    const transformedPost = {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      metaTitle: post.metaTitle,
+      metaDescription: post.metaDescription,
+      content: typeof post.content === 'string' 
+        ? JSON.parse(post.content) 
+        : post.content || [],
+      categories: post.categories.map(cat => cat.name),
+      status: post.status.toLowerCase(), // Convert to frontend format
+      author: post.author,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    }
+
+    return NextResponse.json(transformedPost)
   } catch (error) {
     console.error('Error fetching post:', error)
     return NextResponse.json(
@@ -82,10 +111,13 @@ export async function PUT(
     
     // Copy basic fields
     if (validatedData.title) updateData.title = validatedData.title
-    if (validatedData.content) updateData.content = validatedData.content
+    if (validatedData.content) updateData.content = JSON.stringify(validatedData.content)
     if (validatedData.metaTitle !== undefined) updateData.metaTitle = validatedData.metaTitle
     if (validatedData.metaDescription !== undefined) updateData.metaDescription = validatedData.metaDescription
-    if (validatedData.status) updateData.status = validatedData.status
+    if (validatedData.status) {
+      // Map frontend status to database enum
+      updateData.status = validatedData.status === 'published' ? 'PUBLISHED' : 'DRAFT'
+    }
     
     if (validatedData.title) {
       const slug = validatedData.title
@@ -96,16 +128,28 @@ export async function PUT(
       updateData.slug = `${slug}-${Date.now()}`
     }
 
-    // Handle category and tag updates
-    if (validatedData.categoryIds !== undefined) {
+    // Handle category updates by name
+    if (validatedData.categories !== undefined) {
+      // First, find or create categories by name
+      const categoryConnections = validatedData.categories.map(categoryName => {
+        const slug = categoryName
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .trim()
+        
+        return {
+          where: { name: categoryName },
+          create: { 
+            name: categoryName,
+            slug: `${slug}-${Date.now()}`
+          }
+        }
+      })
+      
       updateData.categories = {
-        set: validatedData.categoryIds.map(id => ({ id }))
-      }
-    }
-
-    if (validatedData.tagIds !== undefined) {
-      updateData.tags = {
-        set: validatedData.tagIds.map(id => ({ id }))
+        set: [],
+        connectOrCreate: categoryConnections
       }
     }
 
@@ -126,7 +170,24 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json(post)
+    // Transform response for frontend
+    const transformedPost = {
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      metaTitle: post.metaTitle,
+      metaDescription: post.metaDescription,
+      content: typeof post.content === 'string' 
+        ? JSON.parse(post.content) 
+        : post.content || [],
+      categories: post.categories.map(cat => cat.name),
+      status: post.status.toLowerCase(), // Convert to frontend format
+      author: post.author,
+      createdAt: post.createdAt.toISOString(),
+      updatedAt: post.updatedAt.toISOString()
+    }
+
+    return NextResponse.json(transformedPost)
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

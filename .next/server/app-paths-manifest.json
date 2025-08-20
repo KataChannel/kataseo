@@ -1,7 +1,5 @@
 {
-  "/admin/pages/create/page": "app/admin/pages/create/page.js",
-  "/admin/pages/page": "app/admin/pages/page.js",
-  "/api/pages/route": "app/api/pages/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
   "/page": "app/page.js"
 }
