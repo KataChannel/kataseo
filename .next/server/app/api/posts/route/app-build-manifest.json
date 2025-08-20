@@ -1,11 +1,11 @@
 {
   "pages": {
     "/api/posts/route": [
-      "static/chunks/3996deeca1881b47.js",
+      "static/chunks/6a06277139e60d90.js",
       "static/chunks/47f477e3d2ef265b.js",
       "static/chunks/202abb9aed9e828b.js",
       "static/chunks/0656f51f27ce398d.js",
-      "static/chunks/turbopack-55f11af11a3427df.js"
+      "static/chunks/turbopack-84453bf6cb9f86f7.js"
     ]
   }
 }
