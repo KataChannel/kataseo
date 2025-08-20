@@ -6,90 +6,92 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Page {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  content     Json     // Block editor content
-  metaTitle   String?
-  metaDescription String?
-  keywords    String?
-  ogImage     String?
-  published   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("pages")
+enum UserRole {
+  ADMIN
+  EDITOR
+  GUEST
 }
 
-model Post {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique
-  content     Json     // Block editor content
-  excerpt     String?
-  featuredImage String?
-  metaTitle   String?
-  metaDescription String?
-  keywords    String?
-  ogImage     String?
-  published   Boolean  @default(false)
-  publishedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  categoryId  String?
-  category    Category? @relation(fields: [categoryId], references: [id])
-  tags        PostTag[]
-  
-  @@map("posts")
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      UserRole @default(GUEST)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  posts Post[]
+
+  @@map("users")
 }
 
 model Category {
-  id          String @id @default(cuid())
-  name        String @unique
-  slug        String @unique
-  description String?
-  posts       Post[]
-  
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  // Relations
+  posts Post[]
+
   @@map("categories")
 }
 
 model Tag {
-  id    String    @id @default(cuid())
-  name  String    @unique
-  slug  String    @unique
-  posts PostTag[]
-  
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  // Relations
+  posts Post[]
+
   @@map("tags")
 }
 
-model PostTag {
-  id     String @id @default(cuid())
-  postId String
-  tagId  String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
-  @@unique([postId, tagId])
-  @@map("post_tags")
+model Post {
+  id              String     @id @default(uuid())
+  title           String
+  slug            String     @unique
+  content         Json       // JSONB content
+  metaTitle       String?
+  metaDescription String?
+  status          PostStatus @default(DRAFT)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Foreign keys
+  authorId String
+
+  // Relations
+  author     User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories Category[]
+  tags       Tag[]
+  media      Media[]
+
+  @@map("posts")
 }
 
-model SiteSettings {
-  id          String @id @default("settings")
-  siteName    String @default("KataSEO")
-  siteDescription String?
-  siteUrl     String?
-  logo        String?
-  favicon     String?
-  gtmId       String?
-  gaId        String?
-  socialLinks Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model Media {
+  id      String  @id @default(uuid())
+  url     String
+  altText String?
+  type    String  // image, video, etc.
+  size    Int?    // file size in bytes
   
-  @@map("site_settings")
+  // Foreign keys
+  postId String
+
+  // Relations
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("media")
 }
