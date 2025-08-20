@@ -47,6 +47,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 }
 
 
+// Validate ../../app/[slug]/page.tsx
+{
+  const handler = {} as typeof import("../../app/[slug]/page.js")
+  handler satisfies AppPageConfig<"/[slug]">
+}
+
 // Validate ../../app/admin/media/page.tsx
 {
   const handler = {} as typeof import("../../app/admin/media/page.js")
@@ -65,10 +71,22 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   handler satisfies AppPageConfig<"/admin/posts">
 }
 
+// Validate ../../app/category/[slug]/page.tsx
+{
+  const handler = {} as typeof import("../../app/category/[slug]/page.js")
+  handler satisfies AppPageConfig<"/category/[slug]">
+}
+
 // Validate ../../app/page.tsx
 {
   const handler = {} as typeof import("../../app/page.js")
   handler satisfies AppPageConfig<"/">
+}
+
+// Validate ../../app/tag/[slug]/page.tsx
+{
+  const handler = {} as typeof import("../../app/tag/[slug]/page.js")
+  handler satisfies AppPageConfig<"/tag/[slug]">
 }
 
 // Validate ../../app/api/auth/login/route.ts
@@ -129,6 +147,12 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   const handler = {} as typeof import("../../app/api/tags/route.js")
   handler satisfies RouteHandlerConfig<"/api/tags">
+}
+
+// Validate ../../app/robots.txt/route.ts
+{
+  const handler = {} as typeof import("../../app/robots.txt/route.js")
+  handler satisfies RouteHandlerConfig<"/robots.txt">
 }
 
 

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   DndContext,
   closestCenter,
@@ -11,7 +11,6 @@ import {
   DragEndEvent,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -124,7 +123,8 @@ function EditorCore({
   isSaving?: boolean
 }) {
   const { blocks, moveBlock } = useEditor()
-  const [history, setHistory] = useState<Block[][]>([blocks])
+  const [history] = useState<Block[][]>([blocks])
+  // setHistory removed to avoid unused variable warning
   const [historyIndex, setHistoryIndex] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
@@ -151,27 +151,27 @@ function EditorCore({
     }
   }
 
-  // History management
-  const saveToHistory = (newBlocks: Block[]) => {
-    const newHistory = history.slice(0, historyIndex + 1)
-    newHistory.push(newBlocks)
-    setHistory(newHistory)
-    setHistoryIndex(newHistory.length - 1)
-  }
+  // History management (currently not used, but kept for future implementation)
+  // const saveToHistory = (newBlocks: Block[]) => {
+  //   const newHistory = history.slice(0, historyIndex + 1)
+  //   newHistory.push(newBlocks)
+  //   setHistory(newHistory)
+  //   setHistoryIndex(newHistory.length - 1)
+  // }
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1)
       // Apply the previous state
     }
-  }
+  }, [historyIndex])
 
-  const redo = () => {
+  const redo = useCallback(() => {
     if (historyIndex < history.length - 1) {
       setHistoryIndex(historyIndex + 1)
       // Apply the next state
     }
-  }
+  }, [historyIndex, history.length])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -200,7 +200,7 @@ function EditorCore({
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [historyIndex, readOnly, onSave])
+  }, [historyIndex, readOnly, onSave, undo, redo])
 
   if (readOnly) {
     return (
