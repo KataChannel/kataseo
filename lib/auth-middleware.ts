@@ -9,8 +9,10 @@ export interface AuthenticatedRequest extends NextRequest {
   }
 }
 
-export function withAuth(handler: (request: AuthenticatedRequest) => Promise<NextResponse>) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+export function withAuth<T = any>(
+  handler: (request: AuthenticatedRequest, context?: T) => Promise<NextResponse>
+) {
+  return async (request: NextRequest, context?: T): Promise<NextResponse> => {
     try {
       const authHeader = request.headers.get('authorization')
       const token = extractTokenFromHeader(authHeader)
@@ -39,7 +41,7 @@ export function withAuth(handler: (request: AuthenticatedRequest) => Promise<Nex
         role: payload.role,
       }
 
-      return handler(authenticatedRequest)
+      return handler(authenticatedRequest, context)
     } catch (error) {
       console.error('Authentication middleware error:', error)
       return NextResponse.json(
@@ -50,9 +52,9 @@ export function withAuth(handler: (request: AuthenticatedRequest) => Promise<Nex
   }
 }
 
-export function withRole(allowedRoles: string[]) {
-  return function (handler: (request: AuthenticatedRequest) => Promise<NextResponse>) {
-    return withAuth(async (request: AuthenticatedRequest) => {
+export function withRole<T = any>(allowedRoles: string[]) {
+  return function (handler: (request: AuthenticatedRequest, context?: T) => Promise<NextResponse>) {
+    return withAuth<T>(async (request: AuthenticatedRequest, context?: T) => {
       if (!request.user || !allowedRoles.includes(request.user.role)) {
         return NextResponse.json(
           { error: 'Insufficient permissions' },
@@ -60,7 +62,7 @@ export function withRole(allowedRoles: string[]) {
         )
       }
 
-      return handler(request)
+      return handler(request, context)
     })
   }
 }

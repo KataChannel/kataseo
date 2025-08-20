@@ -1,5 +1,7 @@
-git checkout -b  dev2.1_phase14
-git push --set-upstream origin dev2.1_phase14
+read -p "Enter branch name: " branch_name
+git checkout -b "$branch_name"
+git push --set-upstream origin "$branch_name"
 git add .
-git commit -m "Implement category and tag selectors in post editor"
+read -p "Enter commit message: " commit_message
+git commit -m "$commit_message"
 git push

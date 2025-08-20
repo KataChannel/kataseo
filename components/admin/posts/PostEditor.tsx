@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 import { BlockEditor, EditorProvider, TagSelector, CategorySelector } from '../../editor'
 import { Button, Input, Textarea } from '../../ui'
 import { Block } from '../../../types/editor'
@@ -24,6 +25,7 @@ interface PostEditorProps {
 
 export function PostEditor({ postId, initialData }: PostEditorProps) {
   const router = useRouter()
+  const { token } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   
   // Form state
@@ -90,7 +92,8 @@ export function PostEditor({ postId, initialData }: PostEditorProps) {
       const response = await fetch(url, {
         method,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
         body: JSON.stringify(postData)
       })
