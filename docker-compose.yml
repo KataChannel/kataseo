@@ -1,36 +1,6 @@
 version: '3.8'
 
 services:
-  # Next.js Application
-  nextjs-app:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-    container_name: websiteseo-app
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DB_URL=postgresql://postgres:password@postgres-db:5432/websiteseo?schema=public
-      - DATABASE_URL=postgresql://postgres:password@postgres-db:5432/websiteseo?schema=public
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin123
-      - MINIO_ENDPOINT=minio
-      - MINIO_PORT=9000
-      - MINIO_BUCKET=websiteseo-media
-      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-      - NEXTAUTH_SECRET=your-nextauth-secret-change-this-in-production
-      - NEXTAUTH_URL=http://localhost:3000
-    depends_on:
-      - postgres-db
-      - minio
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run dev
-    networks:
-      - websiteseo-network
-
   # PostgreSQL Database
   postgres-db:
     image: postgres:15-alpine
@@ -99,6 +69,35 @@ services:
       "
     networks:
       - websiteseo-network
+  # Next.js Application
+  # nextjs-app:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile
+  #   container_name: websiteseo-app
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - DB_URL=postgresql://postgres:password@postgres-db:5432/websiteseo?schema=public
+  #     - DATABASE_URL=postgresql://postgres:password@postgres-db:5432/websiteseo?schema=public
+  #     - MINIO_ACCESS_KEY=minioadmin
+  #     - MINIO_SECRET_KEY=minioadmin123
+  #     - MINIO_ENDPOINT=minio
+  #     - MINIO_PORT=9000
+  #     - MINIO_BUCKET=websiteseo-media
+  #     - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+  #     - NEXTAUTH_SECRET=your-nextauth-secret-change-this-in-production
+  #     - NEXTAUTH_URL=http://localhost:3000
+  #   depends_on:
+  #     - postgres-db
+  #     - minio
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   command: npm run dev
+  #   networks:
+  #     - websiteseo-network     
 
 volumes:
   postgres_data:
